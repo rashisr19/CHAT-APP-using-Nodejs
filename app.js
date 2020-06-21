@@ -4,12 +4,26 @@ const mongoose = require('mongoose');
 const flash = require('connect-flash');
 const session = require('express-session');
 const passport = require('passport');
-
-
 var http = require('http');
 var https = require('https');
+var fs = require('fs');
+
+var options = {
+  key : fs.readFileSync('bin/private.key'),
+  cert: fs.readFileSync('bin/certificate.pem')
+};
 
 const app = express();
+
+//secure traffic only
+app.all('*', (req, res, next) => {
+  if(req.secure) {   //if the request is secure than the req object will carry this flag called secure set to be true
+    return next();
+  }
+  else {
+    res.redirect(307, 'https://' + req.hostname + ':' + (port + 443) + req.url);
+  }
+});
 
 //PASSPORT CONFIG
 require('./config/passport')(passport);
@@ -61,4 +75,12 @@ app.use('/users', require('./routes/users'));
 
 const port = process.env.port || 3000;
 
-app.listen(port, console.log(`Connected correctly to the server on port ${port}...`));
+//app.listen(port, console.log(`Connected correctly to the server on port ${port}...`));
+// Create an HTTP service.
+http.createServer(app).listen(port);
+
+// Create an HTTPS service identical to the HTTP service.
+https.createServer(options, app).listen(port + 443, () => {
+  console.log(`Connected correctly to the port ${port+443}`);
+});
+
