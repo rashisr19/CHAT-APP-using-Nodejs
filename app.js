@@ -1,19 +1,27 @@
 const express = require('express');
+const app = express();
+
 const expressLayouts = require('express-ejs-layouts');
 const mongoose = require('mongoose');
 const flash = require('connect-flash');
 const session = require('express-session');
 const passport = require('passport');
-var http = require('http');
+var http = require('http').Server(app);;
 var https = require('https');
 var fs = require('fs');
+// const { delete } = require('./routes');
+// const port1 = 8000;
+// var http1 = require('http').createServer();
+var io = require('socket.io')(8000);
+
+// http1.listen(port1, () => {
+//   console.log('Socket io server running on port : '+port1);
+// })
 
 var options = {
   key : fs.readFileSync('bin/private.key'),
   cert: fs.readFileSync('bin/certificate.pem')
 };
-
-const app = express();
 
 //secure traffic only
 app.all('*', (req, res, next) => {
@@ -75,12 +83,37 @@ app.use('/users', require('./routes/users'));
 
 const port = process.env.port || 3000;
 
-//app.listen(port, console.log(`Connected correctly to the server on port ${port}...`));
+const users ={};
+//Whenever someone connects this gets executed
+io.on('connection', function(socket) {
+  socket.on('new-user', name => {
+    users[socket.id] = name;
+    socket.broadcast.emit('user-connected', name);
+  })
+  // console.log('A user connected');
+  // socket.emit('chat-message' , 'Hello World');
+  socket.on('send-chat-message' , message => {
+    // console.log(message);
+    socket.broadcast.emit('chat-message', {message : message, name : users[socket.id] });
+  })
+
+  socket.on('disconnect', () => {
+    socket.broadcast.emit('user-disconnected', users[socket.id]);
+    delete users[socket.id];
+  })
+
+  //Whenever someone disconnects this piece of code executed
+  // socket.on('disconnect', function () {
+  //    console.log('A user disconnected');
+  // });
+});
+
+
 // Create an HTTP service.
-http.createServer(app).listen(port);
+// http.createServer(app).listen(port);
+http.listen(port);
 
 // Create an HTTPS service identical to the HTTP service.
 https.createServer(options, app).listen(port + 443, () => {
   console.log(`Connected correctly to the port ${port+443}`);
 });
-
