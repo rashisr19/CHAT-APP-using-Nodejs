@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const flash = require('connect-flash');
 const session = require('express-session');
 const passport = require('passport');
+
 var http = require('http').Server(app);;
 var https = require('https');
 var fs = require('fs');
@@ -17,11 +18,25 @@ var io = require('socket.io')(8000);
 // http1.listen(port1, () => {
 //   console.log('Socket io server running on port : '+port1);
 // })
+var http = require('http');
+var https = require('https');
+var fs = require('fs');
+
 
 var options = {
   key : fs.readFileSync('bin/private.key'),
   cert: fs.readFileSync('bin/certificate.pem')
 };
+
+//secure traffic only
+app.all('*', (req, res, next) => {
+  if(req.secure) {   //if the request is secure than the req object will carry this flag called secure set to be true
+    return next();
+  }
+  else {
+    res.redirect(307, 'https://' + req.hostname + ':' + (port + 443) + req.url);
+  }
+});
 
 //secure traffic only
 app.all('*', (req, res, next) => {
@@ -111,7 +126,10 @@ io.on('connection', function(socket) {
 
 // Create an HTTP service.
 // http.createServer(app).listen(port);
-http.listen(port);
+//app.listen(port, console.log(`Connected correctly to the server on port ${port}...`));
+// Create an HTTP service.
+http.createServer(app).listen(port);
+
 
 // Create an HTTPS service identical to the HTTP service.
 https.createServer(options, app).listen(port + 443, () => {
