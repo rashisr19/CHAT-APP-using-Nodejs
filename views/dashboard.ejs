@@ -1,84 +1,87 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <script src="http://localhost:8000/socket.io/socket.io.js"></script>    
-        <style>
-            #message-container {
-                width: 50%;
-                max-width: 1200px;
-                /* margin-top: 110px; */
-            }
+<head>
+    <script src="http://localhost:8000/socket.io/socket.io.js"></script>    
+    <style>
+        #message-container {
+            width: 50%;
+            max-width: 1200px;
+            /* margin-top: 110px; */
+        }
 
-            #message-container div {
-            background-color: #E2E1E1;
-            padding: 5px;
-            }
+        #message-container div {
+        background-color: black;
+        color: white;
+        padding: 5px;
+        }
 
-            #message-container div:nth-child(2n) {
-            background-color: #FFF;
-            }
-        </style>    
-    </head>
-    <body>
-        <div style="float: left; margin-left: 0px;"><h1 class="mt-4">Chat here</h1><p class="lead mb-3" id="user-name" data-name = <%= name %>>Welcome <%= name %></p></div>
-        <div style="float: right; margin-top: 20px; margin-left: 150px;">
-            <a href="/users/changepassword" class="btn btn-secondary"><strong>Change password</strong></a>
-            <a href="/users/logout" class="btn btn-secondary"><strong>Logout</strong></a>
+        #message-container div:nth-child(2n) {
+        background-color: #FFF;
+        color: black;
+        }
+    </style>    
+</head>
+<body>
+    <div class="navbar" style="background-color: black; width: 100%;">
+        <p class="lead mb-3" style="color: white; font-size: 22px; margin-top: 10px;" id="user-name" data-name = <%= name %>>Welcome <%= name %></p>
+        <div style="float: right; margin-left: 150px;">
+            <a href="/users/changepassword" class="btn btn-secondary" style="color: white; background-color: black;"><strong>Change password</strong></a>
+            <a href="/users/logout" class="btn btn-secondary" style="color: white; background-color: black;"><strong>Logout</strong></a>
         </div>
-        
-        <div id="message-container" style="font-size: 16px; margin-left: 230px; "></div> 
-        <form id="send-container">
-            <div class="input-group" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-                <div class="col-9">
-                    <input type="text"  class="form-control" style = "margin-top: 400px; margin-left: 0px; background-color: #E2E1E1; margin-bottom: 15px;" placeholder="Write your message here..." id="message-input">
-                </div>
-                <button class="input-group-addon btn btn-primary" style = "margin-top: 397px; margin-left: 0px;margin-bottom: 15px;" id="send-button">Send</button>
+    </div>
+    
+    
+    <br>
+    <div id="message-container" style="font-size: 16px; margin-left: 230px; "></div> 
+    <form id="send-container">
+        <div class="input-group" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+            <div class="col-9">
+                <input type="text"  class="form-control" style = "margin-top: 400px; margin-left: 0px; background-color: #E2E1E1; margin-bottom: 15px;" placeholder="Write your message here..." id="message-input">
             </div>
-        </form>
+            <button class="input-group-addon btn btn-primary" style = "margin-top: 397px; margin-left: 0px;margin-bottom: 15px; background-color: black;" id="send-button">Send</button>
+        </div>
+    </form>
 
-        <script>
-            const socket = io('http://localhost:8000');
+    <script>
+        const socket = io('http://localhost:8000');
 
-            const messageForm = document.getElementById('send-container');
-            const messageInput = document.getElementById('message-input');
-            const messageContainer = document.getElementById('message-container');
+        const messageForm = document.getElementById('send-container');
+        const messageInput = document.getElementById('message-input');
+        const messageContainer = document.getElementById('message-container');
 
-            appendMessage('You connected');
-            const name = document.getElementById('user-name').dataset.name;
-            socket.emit('new-user', name )
+        appendMessage('You connected');
+        const name = document.getElementById('user-name').dataset.name;
+        socket.emit('new-user', name )
 
-            socket.on('chat-message', data => {
-                // console.log(data);
-                appendMessage(`${data.name} : ${data.message}`);
+        socket.on('chat-message', data => {
+            // console.log(data);
+            appendMessage(`${data.name} : ${data.message}`);
+        })
+
+        socket.on('user-connected', name => {
+            // console.log(data);
+            appendMessage(`${name} is Here..`);
+        })
+
+        socket.on('user-disconnected', name => {
+            // console.log(data);
+            appendMessage(`${name} disconnected..`);
+        })
+
+        if(messageForm) {
+            messageForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const message = messageInput.value;
+                appendMessage(`You : ${message}`)
+                socket.emit('send-chat-message', message);
+                messageInput.value = '';
             })
+        }
+        function appendMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.innerText = message;
+            messageContainer.append(messageElement);
+        }
 
-            socket.on('user-connected', name => {
-                // console.log(data);
-                appendMessage(`${name} connected..`);
-            })
+    </script>
 
-            socket.on('user-disconnected', name => {
-                // console.log(data);
-                appendMessage(`${name} disconnected..`);
-            })
-
-            if(messageForm) {
-                messageForm.addEventListener('submit', e => {
-                    e.preventDefault();
-                    const message = messageInput.value;
-                    appendMessage(`You : ${message}`)
-                    socket.emit('send-chat-message', message);
-                    messageInput.value = '';
-                })
-            }
-            function appendMessage(message) {
-                const messageElement = document.createElement('div');
-                messageElement.innerText = message;
-                messageContainer.append(messageElement);
-            }
-
-        </script>
-
-    </body>
-</html>
+</body>
 
